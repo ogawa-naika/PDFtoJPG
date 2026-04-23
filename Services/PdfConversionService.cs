@@ -1,14 +1,14 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Ghostscript.NET.Rasterizer;
-using SkiaSharp;
+using ImageMagick;
 
 namespace pdf_jpg.Services;
 
 public class PdfConversionService
 {
-    private const int DPI = 250;
+    private const int DPI = 300;
+    private const int JPEG_QUALITY = 90;
 
     public async Task ConvertPdfToJpgAsync(string pdfPath, string outputFolder)
     {
@@ -25,50 +25,46 @@ public class PdfConversionService
     {
         string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(pdfPath);
 
-        using (var rasterizer = new GhostscriptRasterizer())
+        // PDF 読み込み設定（250DPI）
+        var settings = new MagickReadSettings
         {
-            // Ghostscript リソースの初期化
-            rasterizer.Open(pdfPath);
+            Density = new Density(DPI, DPI),
+            Format = MagickFormat.Pdf,
+        };
 
-            try
+        try
+        {
+            // 全ページを一度に読み込む
+            using (var images = new MagickImageCollection())
             {
-                int pageCount = rasterizer.PageCount;
+                images.Read(pdfPath, settings);
 
-                // ページインデックスは 1 から始まる（0ベースではない）
-                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
+                int pageCount = images.Count;
+
+                for (int i = 0; i < pageCount; i++)
                 {
-                    // ページをレンダリング（250DPI）
-                    var image = rasterizer.GetPage(pageNumber, DPI);
+                    var image = images[i];
+
+                    // 白背景を設定（PDFの透過部分を白にする）
+                    image.BackgroundColor = MagickColors.White;
+                    image.Alpha(AlphaOption.Remove);
+                    image.Format = MagickFormat.Jpeg;
+                    image.Quality = JPEG_QUALITY;
 
                     // ファイル名を決定
                     string outputFileName = pageCount == 1
                         ? $"{fileNameWithoutExtension}.jpg"
-                        : $"{fileNameWithoutExtension}_page{pageNumber}.jpg";
+                        : $"{fileNameWithoutExtension}_page{i + 1}.jpg";
 
                     string outputPath = Path.Combine(outputFolder, outputFileName);
 
-                    // JPGで保存
-                    SaveAsJpeg(image, outputPath);
-                    image?.Dispose();
+                    image.Write(outputPath);
                 }
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"PDF変換処理でエラーが発生しました: {ex.Message}", ex);
-            }
         }
-    }
-
-    private void SaveAsJpeg(SKBitmap bitmap, string outputPath)
-    {
-        if (bitmap == null)
-            throw new ArgumentNullException(nameof(bitmap));
-
-        using (var image = SKImage.FromBitmap(bitmap))
-        using (var data = image.Encode(SKEncodedImageFormat.Jpeg, 90))
-        using (var stream = File.Create(outputPath))
+        catch (Exception ex)
         {
-            data.SaveTo(stream);
+            throw new InvalidOperationException($"PDF変換処理でエラーが発生しました: {ex.Message}", ex);
         }
     }
 }
