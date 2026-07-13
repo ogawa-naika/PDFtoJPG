@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
@@ -9,11 +10,62 @@ namespace pdf_jpg;
 public partial class MainWindow : Window
 {
     private readonly PdfConversionService _conversionService;
+    private readonly string _settingsFilePath =
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "pdf_jpg",
+            "last-output-folder.txt");
 
     public MainWindow()
     {
         InitializeComponent();
         _conversionService = new PdfConversionService();
+
+        LoadLastOutputFolder();
+    }
+
+    private void LoadLastOutputFolder()
+    {
+        try
+        {
+            if (!File.Exists(_settingsFilePath))
+            {
+                return;
+            }
+
+            string path = File.ReadAllText(_settingsFilePath).Trim();
+            if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+            {
+                OutputFolderTextBox.Text = path;
+            }
+        }
+        catch
+        {
+            // 読み込み失敗時は無視（アプリは継続）
+        }
+    }
+
+    private void SaveLastOutputFolder(string folderPath)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            {
+                return;
+            }
+
+            string? dir = Path.GetDirectoryName(_settingsFilePath);
+            if (!string.IsNullOrWhiteSpace(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            File.WriteAllText(_settingsFilePath, folderPath);
+        }
+        catch
+        {
+            // 保存失敗時は無視（アプリは継続）
+        }
     }
 
     private void Window_DragOver(object sender, DragEventArgs e)
@@ -63,6 +115,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true)
         {
             OutputFolderTextBox.Text = dialog.SelectedPath;
+            SaveLastOutputFolder(dialog.SelectedPath);
         }
     }
 
@@ -161,6 +214,7 @@ public partial class MainWindow : Window
             if (files.Length > 0 && System.IO.Directory.Exists(files[0]))
             {
                 OutputFolderTextBox.Text = files[0];
+                SaveLastOutputFolder(files[0]);
             }
         }
         e.Handled = true;
