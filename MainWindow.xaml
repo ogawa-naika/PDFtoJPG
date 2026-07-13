@@ -37,7 +37,10 @@
                              Background="White"
                              Text="ここにPDFをドラッグドロップ"
                              Foreground="#999999"
-                             VerticalAlignment="Center" />
+                             VerticalAlignment="Center"
+                             AllowDrop="True"
+                             PreviewDragOver="PdfPathTextBox_DragOver"
+                             PreviewDrop="PdfPathTextBox_Drop" />
                     <Button x:Name="BrowseButton"
                             Grid.Column="1"
                             Content="参照"
@@ -69,7 +72,10 @@
                              IsReadOnly="True"
                              Background="White"
                              VerticalAlignment="Center"
-                             Foreground="#666666" />
+                             Foreground="#666666"
+                             AllowDrop="True"
+                             PreviewDragOver="OutputFolderTextBox_DragOver"
+                             PreviewDrop="OutputFolderTextBox_Drop" />
                     <Button x:Name="OutputFolderButton"
                             Grid.Column="1"
                             Content="参照"

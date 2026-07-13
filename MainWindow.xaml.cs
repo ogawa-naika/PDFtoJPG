@@ -102,4 +102,67 @@ public partial class MainWindow : Window
             ConvertButton.IsEnabled = true;
         }
     }
+
+    // ---- PDF テキストボックス用 D&D ----
+
+    private void PdfPathTextBox_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files.Length > 0 && files[0].EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+                return;
+            }
+        }
+        e.Effects = DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void PdfPathTextBox_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files.Length > 0 && files[0].EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                PdfPathTextBox.Text = files[0];
+                PdfPathTextBox.Foreground = System.Windows.Media.Brushes.Black;
+            }
+        }
+        e.Handled = true;
+    }
+
+    // ---- 出力フォルダ テキストボックス用 D&D ----
+
+    private void OutputFolderTextBox_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files.Length > 0 && System.IO.Directory.Exists(files[0]))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+                return;
+            }
+        }
+        e.Effects = DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OutputFolderTextBox_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files.Length > 0 && System.IO.Directory.Exists(files[0]))
+            {
+                OutputFolderTextBox.Text = files[0];
+            }
+        }
+        e.Handled = true;
+    }
 }
