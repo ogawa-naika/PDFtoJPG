@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using Microsoft.Win32;
@@ -11,10 +12,9 @@ public partial class MainWindow : Window
 {
     private readonly PdfConversionService _conversionService;
     private readonly string _settingsFilePath =
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "pdf_jpg",
-            "last-output-folder.txt");
+        Path.Combine(AppContext.BaseDirectory, "last-output-folder.txt");
+    private readonly string _windowPositionFilePath =
+        Path.Combine(AppContext.BaseDirectory, "window-position.txt");
 
     public MainWindow()
     {
@@ -22,6 +22,7 @@ public partial class MainWindow : Window
         _conversionService = new PdfConversionService();
 
         LoadLastOutputFolder();
+        LoadWindowPosition();
     }
 
     private void LoadLastOutputFolder()
@@ -66,6 +67,87 @@ public partial class MainWindow : Window
         {
             // 保存失敗時は無視（アプリは継続）
         }
+    }
+
+    private void LoadWindowPosition()
+    {
+        try
+        {
+            if (!File.Exists(_windowPositionFilePath))
+            {
+                return;
+            }
+
+            string[] position = File.ReadAllLines(_windowPositionFilePath);
+            if (position.Length != 2 ||
+                !double.TryParse(position[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double left) ||
+                !double.TryParse(position[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double top) ||
+                !double.IsFinite(left) ||
+                !double.IsFinite(top) ||
+                !IsWindowPositionVisible(left, top))
+            {
+                return;
+            }
+
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Left = left;
+            Top = top;
+        }
+        catch
+        {
+            // 読み込み失敗時は無視（アプリは継続）
+        }
+    }
+
+    private bool IsWindowPositionVisible(double left, double top)
+    {
+        double virtualScreenRight = SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth;
+        double virtualScreenBottom = SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight;
+
+        return left >= SystemParameters.VirtualScreenLeft &&
+               top >= SystemParameters.VirtualScreenTop &&
+               left + Width <= virtualScreenRight &&
+               top + Height <= virtualScreenBottom;
+    }
+
+    private void SaveWindowPosition()
+    {
+        try
+        {
+            double left = Left;
+            double top = Top;
+
+            if (WindowState != WindowState.Normal)
+            {
+                Rect restoreBounds = RestoreBounds;
+                left = restoreBounds.Left;
+                top = restoreBounds.Top;
+            }
+
+            if (!double.IsFinite(left) || !double.IsFinite(top))
+            {
+                return;
+            }
+
+            string? dir = Path.GetDirectoryName(_windowPositionFilePath);
+            if (!string.IsNullOrWhiteSpace(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            File.WriteAllText(
+                _windowPositionFilePath,
+                $"{left.ToString(CultureInfo.InvariantCulture)}{Environment.NewLine}{top.ToString(CultureInfo.InvariantCulture)}");
+        }
+        catch
+        {
+            // 保存失敗時は無視（アプリは継続）
+        }
+    }
+
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        SaveWindowPosition();
     }
 
     private void Window_DragOver(object sender, DragEventArgs e)

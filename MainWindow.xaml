@@ -5,6 +5,7 @@
         Height="400"
         Width="480"
         WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing"
         AllowDrop="True"
         DragOver="Window_DragOver"
         Drop="Window_Drop"
