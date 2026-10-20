@@ -1,7 +1,7 @@
 <Window x:Class="pdf_jpg.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PDF to JPG 変換ツール v1.1.0"
+        Title="PDF to JPG 変換ツール v1.2.0"
         Height="400"
         Width="480"
         WindowStartupLocation="CenterScreen"
